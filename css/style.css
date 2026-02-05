@@ -1,0 +1,82 @@
+/* RESET */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: #f2f2f2;
+  font-family: Arial, Helvetica, sans-serif;
+
+  /* centriranje vsebine */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* glavni kontejner */
+.container {
+  display: flex;           /* da labirint in gumbe postavi horizontalno */
+  justify-content: center; /* centrirano horizontalno na strani */
+  align-items: flex-start; /* vrhovi poravnani */
+  gap: 20px;               /* prostor med labirintom in gumbi */
+  margin-top: 50px;        /* malo vrhnjega prostora */
+}
+
+/* držalo za labirint */
+#mazeholder {
+  position: relative;
+  width: 800px;
+  height: 800px;
+
+  /* lep izgled */
+  background: white;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+}
+
+/* SVG labirint */
+#mazeholder img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none; /* da ne blokira canvas */
+}
+
+/* canvas čez labirint */
+#canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* gumbi */
+#gumbi {
+  display: flex;             /* da flex deluje */
+  flex-direction: column;    /* en pod drugim */
+  gap: 10px;                 /* razmik med gumbi */
+}
+
+#gumbi button {
+  padding: 10px 22px;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  background: #333;
+  color: white;
+  transition: background 0.2s ease;
+}
+
+#gumbi button:hover {
+  background: #555;
+}
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
