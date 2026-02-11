@@ -10,7 +10,7 @@ body {
   margin: 0;
   overflow: hidden;
 
-  /* 🧀 cheese background + vignette */
+  
   background: radial-gradient(circle at center, #fff6a0 0%, #f4d03f 60%, #d4ac0d 100%);
 
   font-family: Arial, Helvetica, sans-serif;
@@ -124,3 +124,4 @@ button {
   font-size: 16px;
   cursor: pointer;
 }
+
