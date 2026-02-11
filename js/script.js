@@ -304,6 +304,9 @@ function render() {
         icon: "error",
         title: "Konec igre!",
         text: "Miš je stopila na mišolovko. Poskusi znova.",
+		background: "#fff6a0",
+		color: "#5d4037",
+		confirmButtonColor: "#f57f17"
       }).then(() => reset());
       return;
     }
@@ -385,3 +388,4 @@ window.addEventListener("keydown", (e) => {
 // ===== 13. BUTTONS =====
 document.getElementById("gumb").addEventListener("click", startGame);
 document.getElementById("gumb2").addEventListener("click", () => reset(true));
+
