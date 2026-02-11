@@ -321,6 +321,9 @@ function render() {
         icon: "success",
         title: "Zmaga!",
         text: "Prišel si do cilja brez poškodb 🙂",
+		background: "#fff6a0",
+		color: "#5d4037",
+		confirmButtonColor: "#f57f17"
       });
       return;
     }
@@ -388,4 +391,5 @@ window.addEventListener("keydown", (e) => {
 // ===== 13. BUTTONS =====
 document.getElementById("gumb").addEventListener("click", startGame);
 document.getElementById("gumb2").addEventListener("click", () => reset(true));
+
 
