@@ -70,7 +70,7 @@ body {
     radial-gradient(circle at 70% 60%, #d4ac0d 0px, #d4ac0d 50px, transparent 51px),
     radial-gradient(circle at 40% 80%, #d4ac0d 0px, #d4ac0d 25px, transparent 26px);
 
-  opacity: 0.18;
+  opacity: 0.35;
 }
 
 
@@ -111,7 +111,7 @@ body {
   cursor: pointer;
   border: none;
   border-radius: 6px;
-  background: #333;
+  background: #d4ac0d;
   color: white;
   transition: background 0.2s ease;
 }
@@ -124,4 +124,5 @@ button {
   font-size: 16px;
   cursor: pointer;
 }
+
 
