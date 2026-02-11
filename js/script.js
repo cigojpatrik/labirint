@@ -17,6 +17,13 @@ mouseImg.src = "img/mouse.png";
 const trapImg = new Image();
 trapImg.src = "img/trap.png";
 
+const jumpSound = new Audio("sounds/jump.mp3");
+const gameOverSound = new Audio("sounds/gameover.mp3");
+const winSound = new Audio("sounds/win.mp3");
+const bgMusic = new Audio("sounds/bg.mp3");
+bgMusic.loop = true;
+bgMusic.volume = 0.4;
+
 canvas.width = 800;
 canvas.height = 800;
 
@@ -299,7 +306,9 @@ function render() {
       mode = "over";
       cancelAnimationFrame(rafId);
       rafId = null;
-
+		bgMusic.pause();
+		bgMusic.currentTime = 0;
+		gameOverSound.play();
       Swal.fire({
         icon: "error",
         title: "Konec igre!",
@@ -316,7 +325,9 @@ function render() {
       mode = "win";
       cancelAnimationFrame(rafId);
       rafId = null;
-
+		bgMusic.pause();
+		bgMusic.currentTime = 0;
+		winSound.play();
       Swal.fire({
         icon: "success",
         title: "Zmaga!",
@@ -334,6 +345,7 @@ function render() {
 
 // ===== 12. CONTROLS =====
 function startGame() {
+	bgMusic.play();
 	document.activeElement?.blur();
   reset(false); // počisti, ampak naj ne ustavi sweetalert chain
 	pickTrapTargets();
@@ -353,7 +365,10 @@ function startGame() {
 }
 
 function reset(showAlert = false) {
+	
+
   mode = "idle";
+	
 
   if (rafId) cancelAnimationFrame(rafId);
   rafId = null;
@@ -386,6 +401,8 @@ window.addEventListener("keydown", (e) => {
 
   isJumping = true;
   jumpFramesLeft = JUMP_FRAMES;
+  jumpSound.currentTime = 0;
+jumpSound.play();
 });
 
 // ===== 13. BUTTONS =====
