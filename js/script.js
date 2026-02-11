@@ -1,103 +1,387 @@
 // ===== 1. SVG POINTS (tvoja pot) =====
 const svgPoints = `234,2 234,10 250,10 250,58 266,58 266,90 282,90 282,74 298,74 298,106 282,106 282,122 298,122 298,154 330,154 330,138 314,138 314,122 330,122 330,90 346,90 346,106 362,106 362,90 378,90 378,106 394,106 394,90 442,90 442,138 394,138 394,122 378,122 378,138 346,138 346,170 330,170 330,202 314,202 314,218 330,218 330,234 314,234 314,266 298,266 298,282 330,282 330,314 362,314 362,330 378,330 378,314 394,314 394,330 458,330 458,346 474,346 474,426 458,426 458,442 474,442 474,458 442,458 442,474 378,474 378,458 362,458 362,474 346,474 346,442 362,442 362,426 330,426 330,442 314,442 314,410 298,410 298,458 330,458 330,474 250,474 250,482`;
 
-// ===== 2. PRETVORBA SVG → CANVAS FORMAT =====
-const points = svgPoints
+// ===== 2. PRETVORBA SVG → POINTS =====
+const raw = svgPoints
   .trim()
   .split(/\s+/)
-  .flatMap(p => p.split(',').map(Number));
+  .flatMap(p => p.split(",").map(Number));
 
 // ===== 3. CANVAS SETUP =====
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// Nastavi novo širino in višino platna na 800px
+const mouseImg = new Image();
+mouseImg.src = "img/mouse.png";
+
+const trapImg = new Image();
+trapImg.src = "img/trap.png";
+
 canvas.width = 800;
 canvas.height = 800;
 
-// Nastavitve za izris
-ctx.lineWidth = 10;
-ctx.strokeStyle = "#F7F794";
+// Risanje poti (vizual)
+const PATH_WIDTH = 18;
+ctx.lineWidth = PATH_WIDTH;
+ctx.strokeStyle = "#ffb300";
 ctx.lineCap = "round";
-ctx.shadowColor = "#FFFF66";
-ctx.shadowBlur = 5;
+ctx.lineJoin = "round";
+ctx.miterLimit = 5;
+ctx.shadowColor = "#f49c4e";
+ctx.shadowBlur = 15;
 
-// ===== 4. NASTAVITVE ANIMACIJE =====
-let steps = 10;        // smoothness
-let speed = 4;         // hitrost med segmenti
-let step = 0;
-let i = 0;
-let shown = false;
+// ===== 4. SCALE (tvoja originalna dimenzija 484x484) =====
+const originalWidth = 484;
+const originalHeight = 484;
 
-// ===== 5. Usklajevanje poti z velikostjo platna =====
-const originalWidth = 484;  // Originalna širina labirinta (484px)
-const originalHeight = 484; // Originalna višina labirinta (484px)
+const scaleX = canvas.width / originalWidth;
+const scaleY = canvas.height / originalHeight;
 
-const scaleX = canvas.width / originalWidth;  // Faktor skale za širino
-const scaleY = canvas.height / originalHeight; // Faktor skale za višino
-
-// Prilagodi koordinate poti za novo platno
-const scaledPoints = points.map((point, index) => {
-  return index % 2 === 0
-    ? point * scaleX // prilagodi X koordinate
-    : point * scaleY; // prilagodi Y koordinate
-});
-
-// ===== 6. INTERPOLACIJA =====
-function interpolate(x1, y1, x2, y2, step) {
-  return {
-    x: x1 + ((x2 - x1) / steps) * step,
-    y: y1 + ((y2 - y1) / steps) * step
-  };
+// pretvori raw -> polyline točke [{x,y},...]
+const poly = [];
+for (let k = 0; k < raw.length; k += 2) {
+  poly.push({ x: raw[k] * scaleX, y: raw[k + 1] * scaleY });
 }
 
-// ===== 7. ANIMACIJA RISANJA =====
-function animateDrawing() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+// ===== 5. HELPERS =====
+function dist(a, b) {
+  const dx = a.x - b.x, dy = a.y - b.y;
+  return Math.hypot(dx, dy);
+}
 
-  i = 0;
-  shown = true;
+function lerp(a, b, t) {
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
 
-  ctx.beginPath();
-  ctx.moveTo(scaledPoints[0], scaledPoints[1]);
+// ===== 6. NAREDI GOSTE “SAMPLES” TOČKE PO POTI (za gladko animacijo miši + trap placement) =====
+function buildSamples(polyline, stepPx = 6) {
+  const samples = [];
+  let i = 0;
 
-  function drawLine() {
-    if (!shown || i >= scaledPoints.length / 2 - 1) return;
+  let curr = { ...polyline[0] };
+  samples.push({ ...curr });
 
-    const x1 = scaledPoints[i * 2];
-    const y1 = scaledPoints[i * 2 + 1];
-    const x2 = scaledPoints[(i + 1) * 2];
-    const y2 = scaledPoints[(i + 1) * 2 + 1];
+  while (i < polyline.length - 1) {
+    const next = polyline[i + 1];
+    const L = dist(curr, next);
 
-    step = 0;
-
-    function drawSmooth() {
-      if (!shown) return;
-
-      if (step <= steps) {
-        const { x, y } = interpolate(x1, y1, x2, y2, step);
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        step++;
-        requestAnimationFrame(drawSmooth);
-      } else {
-        i++;
-        setTimeout(drawLine, speed);
-      }
+    if (L === 0) {
+      i++;
+      continue;
     }
 
-    drawSmooth();
+    if (L >= stepPx) {
+      const t = stepPx / L;
+      curr = lerp(curr, next, t);
+      samples.push({ ...curr });
+    } else {
+      // če je segment prekratek, pojdi na naslednji segment
+      curr = { ...next };
+      i++;
+    }
   }
 
-  drawLine();
+  // poskrbi, da je zadnja točka res konec
+  const last = polyline[polyline.length - 1];
+  const end = samples[samples.length - 1];
+  if (dist(end, last) > 0.001) samples.push({ ...last });
+
+  return samples;
 }
 
-// ===== 8. RESET =====
-function reset() {
-  shown = false;
+
+const samples = buildSamples(poly, 6);
+
+// ===== 7. GAME STATE =====
+let rafId = null;
+
+let mode = "idle"; // idle | drawing | play | over | win
+
+// koliko sample točk je že “narisanih”
+let drawIndex = 1;
+
+// miš premikanje po samples
+let mouseIndex = 0;
+
+// jump
+let isJumping = false;
+let jumpFramesLeft = 0;
+
+// traps
+const traps = []; // {idx, pos:{x,y}}
+let trapTargets = [];     // 3 izbrani idx-ji
+let trapTargetPtr = 0;    // kateri target je naslednji za postavit
+
+let nextTrapCheckAt = 60; // ko narisanih >= to, preveri možnost za trap
+let lastTrapIdx = -9999;
+
+// ===== 8. KONFIG =====
+const DRAW_SPEED = 1;         // samples na frame (hitrost risanja)
+const MOUSE_SPEED = 0.4;        // samples na frame (hitrost miši)
+const TRAP_COUNT = 3; 
+const TRAP_PROB = 0.35;       // verjetnost, da ob checku postavi trap
+const TRAP_MIN_GAP = 50;      // minimalna razdalja med trap idx (v sample indeksih)
+const TRAP_SIZE = 16;         // velikost mišolovke (vizual)
+const MOUSE_R = 10;           // polmer miši
+const COLLISION_R = 12;       // kolizija miš ↔ trap (približno)
+const JUMP_FRAMES = 40;       // koliko framov traja skok
+const JUMP_HEIGHT = 27;       // vizualni “dvig” miši med skokom
+
+// ===== 9. RISANJE ELEMENTOV =====
+function drawPath(upToIdx) {
+  ctx.beginPath();
+  ctx.moveTo(samples[0].x, samples[0].y);
+
+  for (let i = 1; i < upToIdx; i++) {
+    ctx.lineTo(samples[i].x, samples[i].y);
+  }
+  ctx.stroke();
+}
+
+function drawTrap(t) {
+  const { x, y } = t.pos;
+
+  const size = 34; // <-- velikost mišolovke
+
+  // Če slika še ni naložena, nariši fallback trikotnik
+  if (!trapImg.complete) {
+    ctx.fillStyle = "#b91c1c";
+    ctx.beginPath();
+    ctx.moveTo(x, y - TRAP_SIZE);
+    ctx.lineTo(x + TRAP_SIZE, y + TRAP_SIZE);
+    ctx.lineTo(x - TRAP_SIZE, y + TRAP_SIZE);
+    ctx.closePath();
+    ctx.fill();
+    return;
+  }
+
+  ctx.drawImage(
+    trapImg,
+    x - size / 2,
+    y - size / 2,
+    size,
+    size
+  );
+}
+
+
+function drawMouse(idx) {
+  const i = Math.floor(idx);
+  const nextI = Math.min(samples.length - 1, i + 1);
+
+  const p = samples[i];
+  const next = samples[nextI];
+
+  const yOffset = isJumping ? -JUMP_HEIGHT : 0;
+
+  const size = 40;
+
+  // ---- IZRAČUN SMERI ----
+  const dx = next.x - p.x;
+  const dy = next.y - p.y;
+
+  const angle = Math.atan2(dy, dx); // kot v radianih
+
+  ctx.save();
+
+  // premakni koordinatni sistem na miš
+  ctx.translate(p.x, p.y + yOffset);
+
+  // zavrti v smer gibanja
+  ctx.rotate(angle - Math.PI / 2);
+
+
+
+  // nariši sliko centrirano
+  ctx.drawImage(
+    mouseImg,
+    -size / 2,
+    -size / 2,
+    size,
+    size
+  );
+
+  ctx.restore();
+}
+
+
+
+// ===== 10. TRAPS LOGIC =====
+
+function pickTrapTargets() {
+  const picked = [];
+
+  for (let attempts = 0; attempts < 10000 && picked.length < TRAP_COUNT; attempts++) {
+    // izberi random idx po poti (ne preblizu začetka/konec)
+    const idx = Math.floor(Math.random() * (samples.length - 120)) + 60;
+
+    if (idx > samples.length - 60) continue;
+    if (idx < 60) continue;
+
+    // preveri minimalni razmik
+    let ok = true;
+    for (const p of picked) {
+      if (Math.abs(idx - p) < TRAP_MIN_GAP) { ok = false; break; }
+    }
+    if (!ok) continue;
+
+    picked.push(idx);
+  }
+
+  picked.sort((a, b) => a - b); // pomembno! da jih postavljamo v pravem vrstnem redu
+  trapTargets = picked;
+  trapTargetPtr = 0;
+}
+
+
+function mouseHitsTrap() {
+  const mi = Math.floor(mouseIndex);
+  const mp = samples[Math.max(0, Math.min(samples.length - 1, mi))];
+
+  for (const t of traps) {
+    const tp = t.pos;
+    const d = Math.hypot(mp.x - tp.x, mp.y - tp.y);
+    if (d <= COLLISION_R) return true;
+  }
+  return false;
+}
+
+
+// ===== 11. GAME LOOP =====
+function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 1) narisana pot
+  if (mode === "drawing" || mode === "play" || mode === "over" || mode === "win") {
+    drawPath(drawIndex);
+  }
+
+  // 2) traps (vidni med risanjem in igranjem)
+  for (const t of traps) drawTrap(t);
+
+  // 3) miš
+  if (mode !== "idle") {
+    const visibleMouseIdx = mode === "drawing" ? 0 : mouseIndex;
+    drawMouse(visibleMouseIdx);
+  }
+
+  // ===== state updates =====
+  if (mode === "drawing") {
+
+  drawIndex = Math.min(samples.length, drawIndex + DRAW_SPEED);
+
+  // 🔥 sproti postavljaj 3 mišolovke, ko pot pride do njihovih točk
+  while (trapTargetPtr < trapTargets.length && drawIndex >= trapTargets[trapTargetPtr]) {
+    const idx = trapTargets[trapTargetPtr];
+    traps.push({ idx, pos: samples[idx] });
+    trapTargetPtr++;
+  }
+
+  // ko narisano do konca -> play
+  if (drawIndex >= samples.length) {
+    mode = "play";
+    mouseIndex = 0;
+  }
 }
 
-// ===== 9. GUMBI =====
-document.getElementById("gumb").addEventListener("click", animateDrawing);
-document.getElementById("gumb2").addEventListener("click", reset);
+
+  if (mode === "play") {
+    // jump timer
+    if (jumpFramesLeft > 0) {
+      jumpFramesLeft--;
+      if (jumpFramesLeft === 0) isJumping = false;
+    }
+
+    mouseIndex = Math.min(samples.length - 1, mouseIndex + MOUSE_SPEED);
+
+    // collision samo če NI skoka
+    if (!isJumping && mouseHitsTrap()) {
+      mode = "over";
+      cancelAnimationFrame(rafId);
+      rafId = null;
+
+      Swal.fire({
+        icon: "error",
+        title: "Konec igre!",
+        text: "Miš je stopila na mišolovko. Poskusi znova.",
+      }).then(() => reset());
+      return;
+    }
+
+    // win
+    if (mouseIndex >= samples.length - 1) {
+      mode = "win";
+      cancelAnimationFrame(rafId);
+      rafId = null;
+
+      Swal.fire({
+        icon: "success",
+        title: "Zmaga!",
+        text: "Prišel si do cilja brez poškodb 🙂",
+      });
+      return;
+    }
+  }
+
+  rafId = requestAnimationFrame(render);
+}
+
+// ===== 12. CONTROLS =====
+function startGame() {
+	document.activeElement?.blur();
+  reset(false); // počisti, ampak naj ne ustavi sweetalert chain
+	pickTrapTargets();
+  mode = "drawing";
+  drawIndex = 1;
+  mouseIndex = 0;
+
+  nextTrapCheckAt = 60;
+  lastTrapIdx = -9999;
+
+  // postavi “miš” na začetek (vizualno)
+  isJumping = false;
+  jumpFramesLeft = 0;
+
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(render);
+}
+
+function reset(showAlert = false) {
+  mode = "idle";
+
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  traps.length = 0;
+
+  drawIndex = 1;
+  mouseIndex = 0;
+
+  isJumping = false;
+  jumpFramesLeft = 0;
+
+  if (showAlert) {
+    Swal.fire({ icon: "info", title: "Reset", text: "Igra je ponastavljena." });
+  }
+}
+
+// SPACE = jump
+window.addEventListener("keydown", (e) => {
+  if (e.code !== "Space") return;
+	e.preventDefault();     // ← DODAJ TO
+	e.stopPropagation(); 
+  // skok dovoljen samo med igranjem
+  if (mode !== "play") return;
+
+  // ne spam-aj skoka
+  if (isJumping) return;
+
+  isJumping = true;
+  jumpFramesLeft = JUMP_FRAMES;
+});
+
+// ===== 13. BUTTONS =====
+document.getElementById("gumb").addEventListener("click", startGame);
+document.getElementById("gumb2").addEventListener("click", () => reset(true));

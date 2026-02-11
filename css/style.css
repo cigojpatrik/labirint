@@ -7,52 +7,96 @@
 
 body {
   min-height: 100vh;
-  background: #f2f2f2;
+  margin: 0;
+  overflow: hidden;
+
+  /* 🧀 cheese background + vignette */
+  background: radial-gradient(circle at center, #fff6a0 0%, #f4d03f 60%, #d4ac0d 100%);
+
   font-family: Arial, Helvetica, sans-serif;
 
-  /* centriranje vsebine */
+  /* centriranje vsebine (to ohraniš) */
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+
 /* glavni kontejner */
 .container {
-  display: flex;           /* da labirint in gumbe postavi horizontalno */
-  justify-content: center; /* centrirano horizontalno na strani */
-  align-items: flex-start; /* vrhovi poravnani */
-  gap: 20px;               /* prostor med labirintom in gumbi */
-  margin-top: 50px;        /* malo vrhnjega prostora */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  margin-top: 50px;
 }
+
+
+
 
 /* držalo za labirint */
 #mazeholder {
   position: relative;
-  width: 800px;
-  height: 800px;
 
-  /* lep izgled */
-  background: white;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+  --pad: 22px;
+  --b: 14px;
+
+  /* zunanja velikost = 800 (notri) + padding + border */
+  width:  calc(800px + 2 * (var(--pad) + var(--b)));
+  height: calc(800px + 2 * (var(--pad) + var(--b)));
+
+  padding: var(--pad);
+  border-radius: 40px;
+
+  background: #fff6a0;
+  border: var(--b) solid #ffd54f;
+
+  box-shadow:
+    0 0 0 8px #d4ac0d,
+    inset 0 0 30px rgba(0,0,0,0.1),
+    0 25px 60px rgba(0,0,0,0.35);
 }
+
+
+#mazeholder::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 40px;
+
+  background-image:
+    radial-gradient(circle at 20% 30%, #d4ac0d 0px, #d4ac0d 35px, transparent 36px),
+    radial-gradient(circle at 70% 60%, #d4ac0d 0px, #d4ac0d 50px, transparent 51px),
+    radial-gradient(circle at 40% 80%, #d4ac0d 0px, #d4ac0d 25px, transparent 26px);
+
+  opacity: 0.18;
+}
+
 
 /* SVG labirint */
 #mazeholder img {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: var(--pad);
+  left: var(--pad);
+  width: 800px;
+  height: 800px;
   user-select: none;
-  pointer-events: none; /* da ne blokira canvas */
+  pointer-events: none;
 }
+
+
 
 /* canvas čez labirint */
 #canvas {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: var(--pad);
+  left: var(--pad);
+  width: 800px;
+  height: 800px;
 }
+
+
 
 /* gumbi */
 #gumbi {
