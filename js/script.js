@@ -17,6 +17,9 @@ mouseImg.src = "img/mouse.png";
 const trapImg = new Image();
 trapImg.src = "img/trap.png";
 
+const catImg = new Image();
+catImg.src = "img/cat.png";
+
 const jumpSound = new Audio("sounds/jump.mp3");
 const gameOverSound = new Audio("sounds/gameover.mp3");
 const winSound = new Audio("sounds/win.mp3");
@@ -110,6 +113,10 @@ let drawIndex = 1;
 // miš premikanje po samples
 let mouseIndex = 0;
 
+// mačka lovi miško po isti poti
+let catIndex = -40;
+let chaseMode = false;
+
 // jump
 let isJumping = false;
 let jumpFramesLeft = 0;
@@ -133,6 +140,8 @@ const MOUSE_R = 10;           // polmer miši
 const COLLISION_R = 12;       // kolizija miš ↔ trap (približno)
 const JUMP_FRAMES = 40;       // koliko framov traja skok
 const JUMP_HEIGHT = 27;       // vizualni “dvig” miši med skokom
+const CAT_SPEED = 0.4;
+const CAT_START_DELAY = 40;
 
 // ===== 9. RISANJE ELEMENTOV =====
 function drawPath(upToIdx) {
@@ -211,6 +220,57 @@ function drawMouse(idx) {
   ctx.restore();
 }
 
+function drawCat(idx) {
+  if (idx < 0) return;
+
+  const safeIdx = Math.floor(Math.max(0, Math.min(samples.length - 1, idx)));
+  const nextI = Math.min(samples.length - 1, safeIdx + 1);
+
+  const p = samples[safeIdx];
+  const next = samples[nextI];
+
+  const dx = next.x - p.x;
+  const dy = next.y - p.y;
+  const angle = Math.atan2(dy, dx);
+
+  const size = 54;
+
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(angle + Math.PI / 2 + Math.PI);
+
+  if (catImg.complete && catImg.naturalWidth > 0) {
+    ctx.drawImage(
+      catImg,
+      -size / 2,
+      -size / 2,
+      size,
+      size
+    );
+  } else {
+    // fallback, če ni img/cat.png
+    ctx.fillStyle = "#6d4c41";
+    ctx.beginPath();
+    ctx.arc(0, 0, size / 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(-14, -14);
+    ctx.lineTo(-6, -30);
+    ctx.lineTo(0, -10);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(14, -14);
+    ctx.lineTo(6, -30);
+    ctx.lineTo(0, -10);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
 
 
 // ===== 10. TRAPS LOGIC =====
@@ -264,13 +324,20 @@ function render() {
   }
 
   // 2) traps (vidni med risanjem in igranjem)
+  // 2) traps (vidni samo v prvem krogu)
+if (!chaseMode) {
   for (const t of traps) drawTrap(t);
+}
 
   // 3) miš
   if (mode !== "idle") {
     const visibleMouseIdx = mode === "drawing" ? 0 : mouseIndex;
     drawMouse(visibleMouseIdx);
   }
+  // 4) mačka (šele po prvem uspešnem prihodu do cilja)
+	if (chaseMode && mode === "play") {
+	  drawCat(catIndex);
+	}
 
   // ===== state updates =====
   if (mode === "drawing") {
@@ -299,10 +366,13 @@ function render() {
       if (jumpFramesLeft === 0) isJumping = false;
     }
 
-    mouseIndex = Math.min(samples.length - 1, mouseIndex + MOUSE_SPEED);
+    //mouseIndex = Math.min(samples.length - 1, mouseIndex + MOUSE_SPEED);
+	if (!chaseMode) {
+	  mouseIndex = Math.min(samples.length - 1, mouseIndex + MOUSE_SPEED);
+	}
 
     // collision samo če NI skoka
-    if (!isJumping && mouseHitsTrap()) {
+    if (!chaseMode && !isJumping && mouseHitsTrap()) {
       mode = "over";
       cancelAnimationFrame(rafId);
       rafId = null;
@@ -321,7 +391,7 @@ function render() {
     }
 
     // win
-    if (mouseIndex >= samples.length - 1) {
+    /*if (mouseIndex >= samples.length - 1) {
       mode = "win";
       cancelAnimationFrame(rafId);
       rafId = null;
@@ -337,7 +407,28 @@ function render() {
 		confirmButtonColor: "#FFB300"
       });
       return;
-    }
+    }*/
+	// prvi prihod do cilja: miš se vrne na start, za njo pa začne teči mačka
+	if (!chaseMode && mouseIndex >= samples.length - 1) {
+	  chaseMode = true;
+	  mouseIndex = 0;
+	  catIndex = -CAT_START_DELAY;
+	  winSound.currentTime = 0;
+	  winSound.play();
+	}
+	// chase način: miš in mačka ves čas tečeta po isti poti v zanki
+if (chaseMode) {
+  mouseIndex += MOUSE_SPEED;
+  catIndex += CAT_SPEED;
+
+  if (mouseIndex >= samples.length - 1) {
+    mouseIndex = 0;
+  }
+
+  if (catIndex >= samples.length - 1) {
+    catIndex = -CAT_START_DELAY;
+  }
+}
   }
 
   rafId = requestAnimationFrame(render);
@@ -352,6 +443,8 @@ function startGame() {
   mode = "drawing";
   drawIndex = 1;
   mouseIndex = 0;
+  catIndex = -CAT_START_DELAY;
+chaseMode = false;
 
   nextTrapCheckAt = 60;
   lastTrapIdx = -9999;
@@ -379,6 +472,8 @@ function reset(showAlert = false) {
 
   drawIndex = 1;
   mouseIndex = 0;
+  catIndex = -CAT_START_DELAY;
+chaseMode = false;
 
   isJumping = false;
   jumpFramesLeft = 0;
