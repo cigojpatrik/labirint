@@ -30,7 +30,7 @@ bgMusic.volume = 0.4;
 canvas.width = 800;
 canvas.height = 800;
 
-// Risanje poti (vizual)
+// Risanje poti 
 const PATH_WIDTH = 18;
 ctx.lineWidth = PATH_WIDTH;
 ctx.strokeStyle = "#ffb300";
@@ -40,14 +40,14 @@ ctx.miterLimit = 5;
 ctx.shadowColor = "#f49c4e";
 ctx.shadowBlur = 15;
 
-// 4. SCALE (tvoja originalna dimenzija 484x484) 
+// 4. SCALE 
 const originalWidth = 484;
 const originalHeight = 484;
 
 const scaleX = canvas.width / originalWidth;
 const scaleY = canvas.height / originalHeight;
 
-// pretvori raw -> polyline točke [{x,y},...]
+// pretvori 
 const poly = [];
 for (let k = 0; k < raw.length; k += 2) {
   poly.push({ x: raw[k] * scaleX, y: raw[k + 1] * scaleY });
@@ -63,7 +63,7 @@ function lerp(a, b, t) {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
 
-//  6. NAREDI GOSTE “SAMPLES” TOČKE PO POTI (za gladko animacijo miši + trap placement) 
+//  6. NAREDI GOSTE TOČKE PO POTI  
 function buildSamples(polyline, stepPx = 6) {
   const samples = [];
   let i = 0;
@@ -122,7 +122,7 @@ let isJumping = false;
 let jumpFramesLeft = 0;
 
 // traps
-const traps = []; // {idx, pos:{x,y}}
+const traps = [];
 let trapTargets = [];     // 3 izbrani idx-ji
 let trapTargetPtr = 0;    // kateri target je naslednji za postavit
 
@@ -130,14 +130,14 @@ let nextTrapCheckAt = 60; // ko narisanih >= to, preveri možnost za trap
 let lastTrapIdx = -9999;
 
 //  8. KONFIG 
-const DRAW_SPEED = 1;         // samples na frame (hitrost risanja)
-const MOUSE_SPEED = 0.4;        // samples na frame (hitrost miši)
+const DRAW_SPEED = 1;         // samples na frame 
+const MOUSE_SPEED = 0.4;        // samples na frame 
 const TRAP_COUNT = 3; 
 const TRAP_PROB = 0.35;       // verjetnost, da ob checku postavi trap
-const TRAP_MIN_GAP = 50;      // minimalna razdalja med trap idx (v sample indeksih)
-const TRAP_SIZE = 16;         // velikost mišolovke (vizual)
+const TRAP_MIN_GAP = 50;      // minimalna razdalja med trap idx
+const TRAP_SIZE = 16;         // velikost mišolovke 
 const MOUSE_R = 10;           // polmer miši
-const COLLISION_R = 12;       // kolizija miš ↔ trap (približno)
+const COLLISION_R = 12;       // kolizija miš ↔ trap 
 const JUMP_FRAMES = 40;       // koliko framov traja skok
 const JUMP_HEIGHT = 27;       // vizualni “dvig” miši med skokom
 const CAT_SPEED = 0.4;
@@ -157,7 +157,7 @@ function drawPath(upToIdx) {
 function drawTrap(t) {
   const { x, y } = t.pos;
 
-  const size = 34; // <-- velikost mišolovke
+  const size = 34; 
 
   // Če slika še ni naložena, nariši fallback trikotnik
   if (!trapImg.complete) {
@@ -192,7 +192,7 @@ function drawMouse(idx) {
 
   const size = 40;
 
-  // ---- IZRAČUN SMERI ----
+  //  IZRAČUN SMERI 
   const dx = next.x - p.x;
   const dy = next.y - p.y;
 
@@ -295,7 +295,7 @@ function pickTrapTargets() {
     picked.push(idx);
   }
 
-  picked.sort((a, b) => a - b); // pomembno! da jih postavljamo v pravem vrstnem redu
+  picked.sort((a, b) => a - b); 
   trapTargets = picked;
   trapTargetPtr = 0;
 }
@@ -323,7 +323,7 @@ function render() {
     drawPath(drawIndex);
   }
 
-  // 2) traps (vidni med risanjem in igranjem)
+
   // 2) traps (vidni samo v prvem krogu)
 if (!chaseMode) {
   for (const t of traps) drawTrap(t);
@@ -334,7 +334,7 @@ if (!chaseMode) {
     const visibleMouseIdx = mode === "drawing" ? 0 : mouseIndex;
     drawMouse(visibleMouseIdx);
   }
-  // 4) mačka (šele po prvem uspešnem prihodu do cilja)
+  // 4) mačka 
 	if (chaseMode && mode === "play") {
 	  drawCat(catIndex);
 	}
@@ -344,14 +344,14 @@ if (!chaseMode) {
 
   drawIndex = Math.min(samples.length, drawIndex + DRAW_SPEED);
 
-  // 🔥 sproti postavljaj 3 mišolovke, ko pot pride do njihovih točk
+  //  sproti postavljaj 3 mišolovke, ko pot pride do njihovih točk
   while (trapTargetPtr < trapTargets.length && drawIndex >= trapTargets[trapTargetPtr]) {
     const idx = trapTargets[trapTargetPtr];
     traps.push({ idx, pos: samples[idx] });
     trapTargetPtr++;
   }
 
-  // ko narisano do konca -> play
+  // ko narisano do konca play
   if (drawIndex >= samples.length) {
     mode = "play";
     mouseIndex = 0;
@@ -449,7 +449,7 @@ chaseMode = false;
   nextTrapCheckAt = 60;
   lastTrapIdx = -9999;
 
-  // postavi “miš” na začetek (vizualno)
+  // postavi “miš” na začetek 
   isJumping = false;
   jumpFramesLeft = 0;
 
@@ -503,6 +503,7 @@ jumpSound.play();
 //  13. BUTTONS 
 document.getElementById("gumb").addEventListener("click", startGame);
 document.getElementById("gumb2").addEventListener("click", () => reset(true));
+
 
 
 
