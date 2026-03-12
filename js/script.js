@@ -1,13 +1,13 @@
-// ===== 1. SVG POINTS (tvoja pot) =====
+//  1. SVG POINTS (tvoja pot) 
 const svgPoints = `234,2 234,10 250,10 250,58 266,58 266,90 282,90 282,74 298,74 298,106 282,106 282,122 298,122 298,154 330,154 330,138 314,138 314,122 330,122 330,90 346,90 346,106 362,106 362,90 378,90 378,106 394,106 394,90 442,90 442,138 394,138 394,122 378,122 378,138 346,138 346,170 330,170 330,202 314,202 314,218 330,218 330,234 314,234 314,266 298,266 298,282 330,282 330,314 362,314 362,330 378,330 378,314 394,314 394,330 458,330 458,346 474,346 474,426 458,426 458,442 474,442 474,458 442,458 442,474 378,474 378,458 362,458 362,474 346,474 346,442 362,442 362,426 330,426 330,442 314,442 314,410 298,410 298,458 330,458 330,474 250,474 250,482`;
 
-// ===== 2. PRETVORBA SVG → POINTS =====
+// 2. PRETVORBA SVG → POINTS 
 const raw = svgPoints
   .trim()
   .split(/\s+/)
   .flatMap(p => p.split(",").map(Number));
 
-// ===== 3. CANVAS SETUP =====
+//3. CANVAS SETUP
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
@@ -40,7 +40,7 @@ ctx.miterLimit = 5;
 ctx.shadowColor = "#f49c4e";
 ctx.shadowBlur = 15;
 
-// ===== 4. SCALE (tvoja originalna dimenzija 484x484) =====
+// 4. SCALE (tvoja originalna dimenzija 484x484) 
 const originalWidth = 484;
 const originalHeight = 484;
 
@@ -53,7 +53,7 @@ for (let k = 0; k < raw.length; k += 2) {
   poly.push({ x: raw[k] * scaleX, y: raw[k + 1] * scaleY });
 }
 
-// ===== 5. HELPERS =====
+// 5. HELPERS
 function dist(a, b) {
   const dx = a.x - b.x, dy = a.y - b.y;
   return Math.hypot(dx, dy);
@@ -63,7 +63,7 @@ function lerp(a, b, t) {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
 
-// ===== 6. NAREDI GOSTE “SAMPLES” TOČKE PO POTI (za gladko animacijo miši + trap placement) =====
+//  6. NAREDI GOSTE “SAMPLES” TOČKE PO POTI (za gladko animacijo miši + trap placement) 
 function buildSamples(polyline, stepPx = 6) {
   const samples = [];
   let i = 0;
@@ -102,7 +102,7 @@ function buildSamples(polyline, stepPx = 6) {
 
 const samples = buildSamples(poly, 6);
 
-// ===== 7. GAME STATE =====
+// 7. GAME STATE 
 let rafId = null;
 
 let mode = "idle"; // idle | drawing | play | over | win
@@ -129,7 +129,7 @@ let trapTargetPtr = 0;    // kateri target je naslednji za postavit
 let nextTrapCheckAt = 60; // ko narisanih >= to, preveri možnost za trap
 let lastTrapIdx = -9999;
 
-// ===== 8. KONFIG =====
+//  8. KONFIG 
 const DRAW_SPEED = 1;         // samples na frame (hitrost risanja)
 const MOUSE_SPEED = 0.4;        // samples na frame (hitrost miši)
 const TRAP_COUNT = 3; 
@@ -143,7 +143,7 @@ const JUMP_HEIGHT = 27;       // vizualni “dvig” miši med skokom
 const CAT_SPEED = 0.4;
 const CAT_START_DELAY = 40;
 
-// ===== 9. RISANJE ELEMENTOV =====
+//  9. RISANJE ELEMENTOV 
 function drawPath(upToIdx) {
   ctx.beginPath();
   ctx.moveTo(samples[0].x, samples[0].y);
@@ -273,7 +273,7 @@ function drawCat(idx) {
 }
 
 
-// ===== 10. TRAPS LOGIC =====
+//  10. TRAPS LOGIC 
 
 function pickTrapTargets() {
   const picked = [];
@@ -314,7 +314,7 @@ function mouseHitsTrap() {
 }
 
 
-// ===== 11. GAME LOOP =====
+//  11. GAME LOOP 
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -339,7 +339,7 @@ if (!chaseMode) {
 	  drawCat(catIndex);
 	}
 
-  // ===== state updates =====
+  //  state updates 
   if (mode === "drawing") {
 
   drawIndex = Math.min(samples.length, drawIndex + DRAW_SPEED);
@@ -434,7 +434,7 @@ if (chaseMode) {
   rafId = requestAnimationFrame(render);
 }
 
-// ===== 12. CONTROLS =====
+//  12. CONTROLS 
 function startGame() {
 	bgMusic.play();
 	document.activeElement?.blur();
@@ -500,9 +500,10 @@ window.addEventListener("keydown", (e) => {
 jumpSound.play();
 });
 
-// ===== 13. BUTTONS =====
+//  13. BUTTONS 
 document.getElementById("gumb").addEventListener("click", startGame);
 document.getElementById("gumb2").addEventListener("click", () => reset(true));
+
 
 
 
