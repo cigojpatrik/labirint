@@ -3,9 +3,9 @@ const svgPoints = `234,2 234,10 250,10 250,58 266,58 266,90 282,90 282,74 298,74
 
 // 2. PRETVORBA SVG → POINTS 
 const raw = svgPoints
-  .trim()
-  .split(/\s+/)
-  .flatMap(p => p.split(",").map(Number));
+  .trim()//odstrani odvečne presledke na začetku/koncu
+  .split(/\s+/)//razdeli niz po presledkih v posamezne pare:
+  .flatMap(p => p.split(",").map(Number));//vsak "x,y" razdeli
 
 //3. CANVAS SETUP
 const canvas = document.getElementById("canvas");
@@ -47,18 +47,19 @@ const originalHeight = 484;
 const scaleX = canvas.width / originalWidth;
 const scaleY = canvas.height / originalHeight;
 
-// pretvori 
+// pretvori { x: 234, y: 2 } namesto 234,2
 const poly = [];
 for (let k = 0; k < raw.length; k += 2) {
   poly.push({ x: raw[k] * scaleX, y: raw[k + 1] * scaleY });
 }
 
 // 5. HELPERS
+//Vrne razdaljo med dvema točkama.
 function dist(a, b) {
   const dx = a.x - b.x, dy = a.y - b.y;
   return Math.hypot(dx, dy);
 }
-
+//Linearna interpolacija med točkama a in b.
 function lerp(a, b, t) {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
@@ -67,21 +68,25 @@ function lerp(a, b, t) {
 function buildSamples(polyline, stepPx = 6) {
   const samples = [];
   let i = 0;
-
+//naredi klone
   let curr = { ...polyline[0] };
+  //Doda prvo tocko
   samples.push({ ...curr });
 
   while (i < polyline.length - 1) {
     const next = polyline[i + 1];
+	//racuna razdalje
     const L = dist(curr, next);
-
+	//če sta točki isti, preskoči.
     if (L === 0) {
       i++;
       continue;
     }
 
     if (L >= stepPx) {
+		//t je delež poti.
       const t = stepPx / L;
+	  //linearna interpolacija
       curr = lerp(curr, next, t);
       samples.push({ ...curr });
     } else {
@@ -381,8 +386,8 @@ if (!chaseMode) {
 		gameOverSound.play();
       Swal.fire({
         icon: "error",
-        title: "Konec igre!",
-        text: "Miš je stopila na mišolovko. Poskusi znova.",
+        title: "Game Over!",
+        text: "Mouse got trapped.",
 		background: "#fff6a0",
 		color: "#5d4037",
 		confirmButtonColor: "#FFB300"
@@ -479,7 +484,15 @@ chaseMode = false;
   jumpFramesLeft = 0;
 
   if (showAlert) {
-    Swal.fire({ icon: "info", title: "Reset", text: "Igra je ponastavljena." });
+    Swal.fire({ 
+	icon: "error", 
+	title: "Reset", 
+	text: "Game reseted",
+	background: "#fff6a0",
+	color: "#5d4037",
+	confirmButtonColor: "#FFB300"
+	});
+	
   }
 }
 
