@@ -115,8 +115,40 @@ h1{
   flex-direction: column;    /* en pod drugim */
   gap: 10px;                 /* razmik med gumbi */
 }
-
 #gumbi button {
+  padding: 15px 25px;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  border-radius: 12px;
+
+  /* barva sira */
+  background: #ffd54f;
+  color: #5d4037;
+  font-weight: bold;
+
+  /* efekt luknjic */
+  background-image:
+    radial-gradient(circle at 20% 30%, #ffec80 5px, transparent 6px),
+    radial-gradient(circle at 70% 60%, #ffec80 7px, transparent 8px),
+    radial-gradient(circle at 40% 80%, #ffec80 4px, transparent 5px);
+
+  box-shadow:
+    0 4px 0 #d4ac0d,
+    inset 0 0 10px rgba(0,0,0,0.1);
+
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+#gumbi button:hover {
+  transform: translateY(-2px);
+}
+
+#gumbi button:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #d4ac0d;
+}
+/*#gumbi button {
   padding: 10px 22px;
   font-size: 16px;
   cursor: pointer;
@@ -134,6 +166,42 @@ button {
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
+}*/
+#cheeseCredits {
+  width: 80px;
+  height: 80px;
+  margin-top: 20px;
+  cursor: pointer;
+
+  background: #ffd54f;
+  border-radius: 12px; /* malo zaobljeni robovi */
+
+  position: relative;
+
+  box-shadow: 
+    0 6px 0 #d4ac0d,
+    inset 0 0 10px rgba(0,0,0,0.1);
+
+  transition: transform 0.2s ease;
 }
 
+/* luknjice v siru */
+#cheeseCredits::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image:
+    radial-gradient(circle at 20% 30%, #ffec80 6px, transparent 7px),
+    radial-gradient(circle at 70% 40%, #ffec80 8px, transparent 9px),
+    radial-gradient(circle at 50% 75%, #ffec80 5px, transparent 6px),
+    radial-gradient(circle at 80% 80%, #ffec80 7px, transparent 8px);
+
+  border-radius: 12px;
+}
+
+/* hover efekt */
+#cheeseCredits:hover {
+  transform: scale(1.1);
+}
 

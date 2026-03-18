@@ -582,7 +582,39 @@ jumpSound.play();
 //  13. BUTTONS 
 document.getElementById("gumb").addEventListener("click", startGame);
 document.getElementById("gumb2").addEventListener("click", () => reset(true));
+document.getElementById("rulesBtn").addEventListener("click", () => {
+  Swal.fire({
+    title: "Game Rules",
+    html: `
+      <div style="text-align:left">
+        <p><b>1.</b> Press <b>Start</b> to start the game.</p>
+        <p><b>2.</b> Press space to jump over the traps.</p>
+        <p><b>5.</b> Pazi na mačko </p>
+      </div>
+    `,
+    confirmButtonText: "OK",
+    background: "#fff6a0",
+    color: "#5d4037",
+    confirmButtonColor: "#FFB300"
+  });
+});
 
+document.getElementById("cheeseCredits").addEventListener("click", () => {
+  Swal.fire({
+    title: "Credits 🧀",
+    html: `
+      <div style="text-align:left">
+        <p><b>Game:</b> Mouse Trap</p>
+        <p><b>Developer:</b> Patrik Cigoj</p>
+        
+      </div>
+    `,
+    confirmButtonText: "Nice!",
+    background: "#fff6a0",
+    color: "#5d4037",
+    confirmButtonColor: "#FFB300"
+  });
+});
 
 
 
