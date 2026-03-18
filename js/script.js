@@ -59,7 +59,7 @@ function dist(a, b) {
   const dx = a.x - b.x, dy = a.y - b.y;
   return Math.hypot(dx, dy);
 }
-//Linearna interpolacija med točkama a in b.
+//Linearna interpolacija med točkama a in b t pove kako dalec sm t0 =a t1=b.
 function lerp(a, b, t) {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
@@ -120,15 +120,19 @@ let mouseIndex = 0;
 
 // mačka lovi miško po isti poti
 let catIndex = -40;
+//Ali je mačka že začela loviti miš.
 let chaseMode = false;
+//Koliko chase krogov je že bilo.
+let chaseRound = 0;
 
-// jump
+// ali miš trenutno skače
 let isJumping = false;
+//koliko frame-ov skok še traja
 let jumpFramesLeft = 0;
 
 // traps
 const traps = [];
-let trapTargets = [];     // 3 izbrani idx-ji
+let trapTargets = [];     // 3 izbrani idx-ji kjer bojo misjelovke
 let trapTargetPtr = 0;    // kateri target je naslednji za postavit
 
 let nextTrapCheckAt = 60; // ko narisanih >= to, preveri možnost za trap
@@ -146,16 +150,21 @@ const COLLISION_R = 12;       // kolizija miš ↔ trap
 const JUMP_FRAMES = 40;       // koliko framov traja skok
 const JUMP_HEIGHT = 27;       // vizualni “dvig” miši med skokom
 const CAT_SPEED = 0.4;
-const CAT_START_DELAY = 40;
+const CAT_START_DELAY = 40;  //mačka začne 40 sample korakov za mišjo
+const CHASE_ROUNDS_TO_GAMEOVER = 3; //mačka začne 40 sample korakov za mišjo
+const CAT_CATCHUP_PER_ROUND = 12;  //vsak nov chase krog se mačka postavi malo bližje
 
 //  9. RISANJE ELEMENTOV 
+//upToIdx do katere točke v samples naj narišemo pot
 function drawPath(upToIdx) {
   ctx.beginPath();
   ctx.moveTo(samples[0].x, samples[0].y);
 
   for (let i = 1; i < upToIdx; i++) {
+	  //potegni črto od prejšnje točke do te nove
     ctx.lineTo(samples[i].x, samples[i].y);
   }
+  //dejansko nariše črto na canvas
   ctx.stroke();
 }
 
@@ -175,7 +184,7 @@ function drawTrap(t) {
     ctx.fill();
     return;
   }
-
+	//sliko centrira okoli točke.
   ctx.drawImage(
     trapImg,
     x - size / 2,
@@ -185,20 +194,26 @@ function drawTrap(t) {
   );
 }
 
-
+//idx pove, na katerem mestu v tabeli samples je miš.
 function drawMouse(idx) {
+	//zaokroži število navzdol na najbližje celo število ker je decimalno tabela samples uporablja indekse.
   const i = Math.floor(idx);
+  //To določi naslednjo točko poti, min vrne manjšo od obeh vrednosti.
   const nextI = Math.min(samples.length - 1, i + 1);
-
+	//p je objekt z koordinatama,  točka kjer se miš trenutno nahaja.
   const p = samples[i];
+  //vzame naslednjo točko na poti.
   const next = samples[nextI];
-
+	//med skokom se miš samo vizualno dvigne navzgor
   const yOffset = isJumping ? -JUMP_HEIGHT : 0;
-
+	//vzame naslednjo točko na poti.
   const size = 40;
 
-  //  IZRAČUN SMERI 
+  //  To izračuna razliko po osi x med trenutno in naslednjo točko
+  //dx pomeni delta x torej sprememba po x.Če je:p.x = 100 next.x = 130 pole dx=30, sepravi mis gre u desno.
+
   const dx = next.x - p.x;
+  //ce je - gre navzgor
   const dy = next.y - p.y;
 
   const angle = Math.atan2(dy, dx); // kot v radianih
@@ -227,11 +242,12 @@ function drawMouse(idx) {
 
 function drawCat(idx) {
   if (idx < 0) return;
-
+	//omeji idx, da ne gre izven dovoljenega območja, prepreči negativne vrednosti, ga zaokroži navzdol na celo število.
   const safeIdx = Math.floor(Math.max(0, Math.min(samples.length - 1, idx)));
   const nextI = Math.min(samples.length - 1, safeIdx + 1);
-
+	//trenutna
   const p = samples[safeIdx];
+  //Naslednja
   const next = samples[nextI];
 
   const dx = next.x - p.x;
@@ -282,24 +298,27 @@ function drawCat(idx) {
 
 function pickTrapTargets() {
   const picked = [];
-
+	// Poskuša najti dovolj naključnih veljavnih pozicij za mišolovke.
   for (let attempts = 0; attempts < 10000 && picked.length < TRAP_COUNT; attempts++) {
     // izberi random idx po poti (ne preblizu začetka/konec)
     const idx = Math.floor(Math.random() * (samples.length - 120)) + 60;
-
+		// Če je indeks preblizu koncu poti, ga preskoči.
     if (idx > samples.length - 60) continue;
+	 // Če je indeks preblizu začetku poti, ga preskoči.
     if (idx < 60) continue;
 
     // preveri minimalni razmik
     let ok = true;
+	// Preveri vse že izbrane indekse mišolovk.
     for (const p of picked) {
       if (Math.abs(idx - p) < TRAP_MIN_GAP) { ok = false; break; }
     }
+	 // Če kandidat ni ustrezen, nadaljuj z naslednjim poskusom.
     if (!ok) continue;
-
+	// Doda veljaven indeks med izbrane cilje za mišolovke.
     picked.push(idx);
   }
-
+	// Uredi izbrane indekse naraščajoče, da se mišolovke postavljajo v pravilnem zaporedju po poti.
   picked.sort((a, b) => a - b); 
   trapTargets = picked;
   trapTargetPtr = 0;
@@ -307,12 +326,17 @@ function pickTrapTargets() {
 
 
 function mouseHitsTrap() {
+	// Trenutni indeks miške zaokroži navzdol na celo število.
   const mi = Math.floor(mouseIndex);
+   // Vzame trenutno pozicijo miške iz samples in obenem poskrbi, da indeks ne gre izven meja polja.
   const mp = samples[Math.max(0, Math.min(samples.length - 1, mi))];
-
+	 // Preveri vse trenutno postavljene mišolovke.
   for (const t of traps) {
+	   // Pozicija trenutne mišolovke.
     const tp = t.pos;
+	 // Izračuna razdaljo med miško in mišolovko.
     const d = Math.hypot(mp.x - tp.x, mp.y - tp.y);
+	// Če je razdalja manjša ali enaka radiju trka, je prišlo do trka.
     if (d <= COLLISION_R) return true;
   }
   return false;
@@ -321,9 +345,11 @@ function mouseHitsTrap() {
 
 //  11. GAME LOOP 
 function render() {
+	 // Počisti celoten canvas pred novim frame-om.
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // 1) narisana pot
+   // Če smo v stanju risanja, igranja, poraza ali zmage, izrišemo pot do drawIndex.
   if (mode === "drawing" || mode === "play" || mode === "over" || mode === "win") {
     drawPath(drawIndex);
   }
@@ -335,18 +361,20 @@ if (!chaseMode) {
 }
 
   // 3) miš
+   // Če igra ni v idle stanju, izrišemo miško.
   if (mode !== "idle") {
     const visibleMouseIdx = mode === "drawing" ? 0 : mouseIndex;
     drawMouse(visibleMouseIdx);
   }
   // 4) mačka 
+    // Mačko rišemo samo v chase načinu in samo med aktivnim igranjem.
 	if (chaseMode && mode === "play") {
 	  drawCat(catIndex);
 	}
 
   //  state updates 
   if (mode === "drawing") {
-
+	// Poveča drawIndex, vendar ne preko dolžine polja samples.
   drawIndex = Math.min(samples.length, drawIndex + DRAW_SPEED);
 
   //  sproti postavljaj 3 mišolovke, ko pot pride do njihovih točk
@@ -363,16 +391,19 @@ if (!chaseMode) {
   }
 }
 
-
+	// Logika, ki se izvaja med aktivnim igranjem.
   if (mode === "play") {
     // jump timer
     if (jumpFramesLeft > 0) {
+		// Odšteje en frame trajanja skoka.
       jumpFramesLeft--;
+	  // Ko skok poteče, izklopi stanje skakanja.
       if (jumpFramesLeft === 0) isJumping = false;
     }
 
-    //mouseIndex = Math.min(samples.length - 1, mouseIndex + MOUSE_SPEED);
+     // Če chase način ni aktiven, premika miško naprej po poti v normalnem načinu igre.
 	if (!chaseMode) {
+		 // Poveča mouseIndex za hitrost miške, vendar ne čez konec poti.
 	  mouseIndex = Math.min(samples.length - 1, mouseIndex + MOUSE_SPEED);
 	}
 
@@ -413,25 +444,54 @@ if (!chaseMode) {
       });
       return;
     }*/
+	
 	// prvi prihod do cilja: miš se vrne na start, za njo pa začne teči mačka
 	if (!chaseMode && mouseIndex >= samples.length - 1) {
 	  chaseMode = true;
 	  mouseIndex = 0;
 	  catIndex = -CAT_START_DELAY;
+	  chaseRound = 0;
 	  winSound.currentTime = 0;
 	  winSound.play();
 	}
 	// chase način: miš in mačka ves čas tečeta po isti poti v zanki
+
+// po vsakem krogu je mačka bližje, po 3 krogih pa game over
 if (chaseMode) {
   mouseIndex += MOUSE_SPEED;
+  // Mačko v chase načinu premakne naprej za njeno hitrost.
   catIndex += CAT_SPEED;
 
-  if (mouseIndex >= samples.length - 1) {
-    mouseIndex = 0;
+  // v tretjem chase krogu jo ulovi približno na sredini
+  if (chaseRound === 2 && mouseIndex >= samples.length * 0.5) {
+    mode = "over";
+    cancelAnimationFrame(rafId);
+    rafId = null;
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+    gameOverSound.currentTime = 0;
+    gameOverSound.play();
+
+    Swal.fire({
+      icon: "error",
+      title: "Game Over!",
+      text: "Cat caught the mouse.",
+      background: "#fff6a0",
+      color: "#5d4037",
+      confirmButtonColor: "#FFB300"
+    }).then(() => reset());
+
+    return;
   }
 
-  if (catIndex >= samples.length - 1) {
-    catIndex = -CAT_START_DELAY;
+  // ko miš pride do konca, začneta oba spet od začetka
+  if (mouseIndex >= samples.length - 1) {
+    chaseRound++;
+
+    if (chaseRound < CHASE_ROUNDS_TO_GAMEOVER) {
+      mouseIndex = 0;
+      catIndex = -Math.max(0, CAT_START_DELAY - chaseRound * CAT_CATCHUP_PER_ROUND);
+    }
   }
 }
   }
@@ -442,6 +502,7 @@ if (chaseMode) {
 //  12. CONTROLS 
 function startGame() {
 	bgMusic.play();
+	// Odstrani fokus iz trenutno aktivnega elementa (npr. gumba), če obstaja.
 	document.activeElement?.blur();
   reset(false); // počisti, ampak naj ne ustavi sweetalert chain
 	pickTrapTargets();
@@ -450,18 +511,20 @@ function startGame() {
   mouseIndex = 0;
   catIndex = -CAT_START_DELAY;
 chaseMode = false;
-
+chaseRound = 0;
+	 // Resetira naslednjo točko preverjanja za trap logiko.
   nextTrapCheckAt = 60;
   lastTrapIdx = -9999;
 
   // postavi “miš” na začetek 
+  // Poskrbi, da miška ob novem začetku ne skače.
   isJumping = false;
   jumpFramesLeft = 0;
-
+ // Če animacija že teče, jo ustavi, da ne dobimo dveh vzporednih zank.
   if (rafId) cancelAnimationFrame(rafId);
   rafId = requestAnimationFrame(render);
 }
-
+  // Način igre vrne v začetno stanje mirovanja.
 function reset(showAlert = false) {
 	
 
@@ -470,7 +533,7 @@ function reset(showAlert = false) {
 
   if (rafId) cancelAnimationFrame(rafId);
   rafId = null;
-
+ // Počisti celoten canvas.
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   traps.length = 0;
@@ -479,6 +542,7 @@ function reset(showAlert = false) {
   mouseIndex = 0;
   catIndex = -CAT_START_DELAY;
 chaseMode = false;
+chaseRound = 0;
 
   isJumping = false;
   jumpFramesLeft = 0;
@@ -498,6 +562,7 @@ chaseMode = false;
 
 // SPACE = jump
 window.addEventListener("keydown", (e) => {
+	  // Če pritisnjena tipka ni preslednica, konča funkcijo brez akcije.
   if (e.code !== "Space") return;
 	e.preventDefault();     // ← DODAJ TO
 	e.stopPropagation(); 
@@ -505,8 +570,9 @@ window.addEventListener("keydown", (e) => {
   if (mode !== "play") return;
 
   // ne spam-aj skoka
+  // Če miška že skače, ne dovoli novega skoka.
   if (isJumping) return;
-
+ // Označi, da se je skok začel.
   isJumping = true;
   jumpFramesLeft = JUMP_FRAMES;
   jumpSound.currentTime = 0;
