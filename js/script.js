@@ -589,7 +589,7 @@ document.getElementById("rulesBtn").addEventListener("click", () => {
       <div style="text-align:left">
         <p><b>1.</b> Press <b>Start</b> to start the game.</p>
         <p><b>2.</b> Press space to jump over the traps.</p>
-        <p><b>5.</b> Watch out for the cat </p>
+        <p><b>3.</b> Watch out for the cat </p>
       </div>
     `,
     confirmButtonText: "OK",
