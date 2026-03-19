@@ -18,7 +18,7 @@ body {
   /* centriranje vsebine (to ohraniš) */
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: top;
 }
 h1{
 	//margin-top:5px;
